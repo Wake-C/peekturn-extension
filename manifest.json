@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Peekturn for YouTube",
+  "version": "0.1.0",
+  "description": "Watch YouTube with complete sentence captions and contextual word explanations.",
+  "permissions": ["storage", "tts"],
+  "host_permissions": ["https://www.youtube.com/*", "https://api.deepseek.com/*"],
+  "optional_host_permissions": ["https://*/*"],
+  "background": {"service_worker": "src/background.js", "type": "module"},
+  "options_page": "options.html",
+  "action": {"default_title": "Peekturn settings", "default_icon": {"16":"icons/icon16.png","32":"icons/icon32.png"}},
+  "icons": {"16":"icons/icon16.png","32":"icons/icon32.png","48":"icons/icon48.png","128":"icons/icon128.png"},
+  "content_scripts": [
+    {"matches":["https://www.youtube.com/*"],"js":["src/youtube-main.js"],"run_at":"document_start","world":"MAIN"},
+    {"matches":["https://www.youtube.com/*"],"js":["src/content.js"],"run_at":"document_idle"}
+  ],
+  "web_accessible_resources": [{"resources":["src/watch.js","src/captions.js","src/icons.js","src/watch.css"],"matches":["https://www.youtube.com/*"]}]
+}

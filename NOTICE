@@ -1,0 +1,22 @@
+Peekturn for YouTube
+Copyright 2026 wake
+
+This extension belongs to the Peekturn family:
+https://github.com/Wake-C/peekturn
+
+The default explanation prompts, caption grouping policy, application artwork,
+and shared icon geometry derive from the Peekturn Android application.
+The browser implementation and documentation are distributed under Apache-2.0.
+See LICENSE.
+
+The outlined interface icons use Lucide geometry with Peekturn's 1.8px stroke.
+Lucide's original copyright and license notices are retained in
+licenses/LICENSE-Lucide.txt.
+
+Documentation captures show the extension working on YouTube. The video imagery,
+speech, captions, and YouTube branding remain the property of their respective
+rights holders and are not licensed under this repository's software license.
+Demo video: Steve Jobs' 2005 Stanford Commencement Address, Stanford.
+https://www.youtube.com/watch?v=UF8uR6Z6KLc
+
+Peekturn is not affiliated with or endorsed by YouTube, Google, or Stanford.

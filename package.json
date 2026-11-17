@@ -1,0 +1,10 @@
+{
+  "name": "peekturn-extension",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "author": "wake",
+  "repository": "github:Wake-C/peekturn-extension",
+  "type": "module",
+  "scripts": {"test": "node --test test/*.test.js", "check": "node --check src/watch.js && node --check src/youtube-main.js && node --check src/background.js && node --check src/options.js"}
+}
