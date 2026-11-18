@@ -1,4 +1,4 @@
-import { normalizeSettings } from './settings.js';
+import { DEFAULTS, normalizeSettings } from './settings.js';
 import { PROMPT_EN, PROMPT_ZH } from './prompts.js';
 import { endpointUrl } from './model.js';
 
@@ -59,7 +59,7 @@ document.querySelector('#preview').addEventListener('click', async () => {
   } catch (error) { show(error.message || 'Voice preview failed.', true); }
 });
 try {
-  const settings = normalizeSettings(await chrome.storage.local.get(null));
+  const settings = normalizeSettings(await chrome.storage.local.get(DEFAULTS));
   for (const [name, value] of Object.entries(settings)) {
     if (typeof value === 'boolean') field(name).checked = value;
     else field(name).value = value;

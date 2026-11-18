@@ -1,8 +1,10 @@
-import { normalizeSettings, publicSettings } from './settings.js';
-import { explain, merge } from './model.js';
+import { DEFAULTS, normalizeSettings, publicSettings } from './settings.js';
+import { explain } from './model.js';
+import { createMergeCache } from './merge-cache.js';
 
 // The API key must never be readable through chrome.storage from a content script.
 const storageReady = chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
+const mergeCache = createMergeCache({ storage: chrome.storage.local });
 
 function senderKind(sender) {
   if (sender.id !== chrome.runtime.id || !sender.url) return null;
@@ -29,11 +31,7 @@ async function handle(message, sender) {
   if (!kind || !message || typeof message.type !== 'string') throw new Error('Unauthorized request.');
   await storageReady;
   if (message.type === 'options:open') { await chrome.runtime.openOptionsPage(); return { ok: true }; }
-  if (message.type === 'settings:get') return { ok: true, settings: publicSettings(await chrome.storage.local.get(null)) };
-  if (message.type === 'settings:merge') {
-    if (typeof message.enabled !== 'boolean') throw new Error('Invalid merge setting.');
-    await chrome.storage.local.set({ merge: message.enabled }); return { ok: true };
-  }
+  if (message.type === 'settings:get') return { ok: true, settings: publicSettings(await chrome.storage.local.get(DEFAULTS)) };
   if (message.type === 'speech:stop') { chrome.tts.stop(); return { ok: true }; }
   if (message.type === 'speak') { await speak(message.text, message.accent); return { ok: true }; }
   if (message.type === 'connection:test' && kind === 'options') {
@@ -41,9 +39,9 @@ async function handle(message, sender) {
     return { ok: true };
   }
   if (message.type === 'explain' || message.type === 'merge') {
-    const config = normalizeSettings(await chrome.storage.local.get(null));
+    const config = normalizeSettings(await chrome.storage.local.get(DEFAULTS));
     if (message.type === 'explain') return { ok: true, answer: await explain(config, message.context) };
-    return { ok: true, endCueIds: await merge(config, message.cues) };
+    return { ok: true, ...await mergeCache.merge(config, message.videoId, message.cues) };
   }
   throw new Error('Unknown request.');
 }
@@ -56,8 +54,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.action.onClicked.addListener(() => { chrome.runtime.openOptionsPage().catch(() => {}); });
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local') return;
-  chrome.storage.local.get(null).then(async stored => {
+  if (area !== 'local' || !Object.keys(changes).some(key => Object.hasOwn(DEFAULTS, key))) return;
+  chrome.storage.local.get(DEFAULTS).then(async stored => {
     const settings = publicSettings(stored);
     const tabs = await chrome.tabs.query({ url: 'https://www.youtube.com/*' });
     await Promise.all(tabs.filter(tab => tab.id != null).map(tab =>

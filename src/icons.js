@@ -1,6 +1,8 @@
 // Shared Peekturn Lucide geometry, 24px grid and rounded 1.8px strokes.
 // See licenses/LICENSE-Lucide.txt. Paths match the Android PeekturnIcons family.
 const paths={
+  copy:['M11 9h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z','M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'],
+  check:['M20 6 9 17l-5-5'],
   speaker:['M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298Z','M16 9a5 5 0 0 1 0 6','M19.364 18.364a9 9 0 0 0 0-12.728'],
   stop:['M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z'],
   close:['M18 6 6 18','m6 6 12 12'],

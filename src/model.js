@@ -26,7 +26,7 @@ export async function chat(config, messages, schema, fetchImpl = globalThis.fetc
   const signal = AbortSignal.timeout(45000);
   let response;
   try {
-    response = await fetchImpl(url.toString(), { method: 'POST', redirect: 'error', signal, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${settings.apiKey}` }, body: JSON.stringify({ model: settings.model, messages: requestMessages, response_format: strict ? { type: 'json_schema', json_schema: { name: schema.name, strict: true, schema: schema.schema } } : { type: 'json_object' } }) });
+    response = await fetchImpl(url.toString(), { method: 'POST', redirect: 'error', signal, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${settings.apiKey}` }, body: JSON.stringify({ model: settings.model, messages: requestMessages, thinking: { type: 'disabled' }, response_format: strict ? { type: 'json_schema', json_schema: { name: schema.name, strict: true, schema: schema.schema } } : { type: 'json_object' } }) });
   } catch { throw new Error(signal.aborted ? 'Model request timed out. Please try again.' : 'Could not connect to the model provider.'); }
   if (!response.ok) throw new Error(`Model provider returned HTTP ${response.status}.`);
   let envelope;

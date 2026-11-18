@@ -49,25 +49,24 @@ class WatchSession {
     player.addEventListener('pointerleave',()=>this.toolbar.classList.remove('visible'),{signal:this.abort.signal});
     this.panelHost=element('div');this.panelHost.id='peekturn-transcript'; sidebar.prepend(this.panelHost);
     this.panelRoot=shadow(this.panelHost); const panel=element('section','panel');panel.setAttribute('aria-label','Peekturn transcript');
-    const heading=element('header','panel-header'); const title=element('div');title.append(element('h2','','Transcript'),element('span','subheading','English · Peekturn'));
-    heading.append(title,iconButton('close','Hide transcript',()=>{this.panelHost.hidden=true;this.showPanel.setAttribute('aria-expanded','false');}));
-    const tools=element('div','panel-tools');const mergeLabel=element('label','toggle');
-    this.mergeToggle=element('input');this.mergeToggle.type='checkbox';this.mergeToggle.checked=settings.merge;
-    this.mergeToggle.addEventListener('change',async()=>{settings.merge=this.mergeToggle.checked;this.selectCues();const result=await send({type:'settings:merge',enabled:settings.merge});if(!result.ok)this.status.textContent=result.error;});
-    mergeLabel.append(this.mergeToggle,document.createTextNode('Merge sentences'));
+    const heading=element('header','panel-header'),actions=element('div','panel-actions');
+    this.copyButton=iconButton('copy','Copy transcript',()=>this.copyTranscript());this.copyButton.disabled=true;
     this.followButton=iconButton('follow','Follow playback',()=>{this.setFollowing(true);this.scrollActive();});
     this.setFollowing(true);
-    tools.append(mergeLabel,this.followButton);
+    actions.append(this.copyButton,this.followButton,iconButton('close','Hide transcript',()=>{this.panelHost.hidden=true;this.showPanel.setAttribute('aria-expanded','false');}));
+    heading.append(element('h2','','Transcript'),actions);
+    this.copyFeedback=element('div','copy-feedback visually-hidden');this.copyFeedback.setAttribute('role','status');
     this.status=element('div','status','Loading English captions…');this.status.setAttribute('role','status');
     this.list=element('div','transcript-list');this.list.tabIndex=0;this.list.setAttribute('aria-label','Complete transcript');
     const stopFollow=()=>this.setFollowing(false);
     this.list.addEventListener('wheel',stopFollow,{passive:true});this.list.addEventListener('touchmove',stopFollow,{passive:true});
     this.list.addEventListener('keydown',e=>{if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End'].includes(e.key))stopFollow();});
     const footer=element('footer','panel-footer');footer.append(iconButton('reload','Reload captions',()=>this.request()),iconButton('settings','Open Peekturn settings',()=>send({type:'options:open'})));
-    panel.append(heading,tools,this.status,this.list,footer);this.panelRoot.append(panel);
+    panel.append(heading,this.copyFeedback,this.status,this.list,footer);this.panelRoot.append(panel);
     this.root.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')this.closeLookup();});
     this.panelRoot.addEventListener('keydown',e=>e.stopPropagation());
     this.root.addEventListener('click',e=>e.stopPropagation());
+    document.addEventListener('click',event=>this.dismissFromOutside(event),{capture:true,signal:this.abort.signal});
     this.onCaptions=e=>this.receive(e.detail);
     document.addEventListener('peekturn:captions',this.onCaptions,{signal:this.abort.signal});
     video.addEventListener('timeupdate',()=>this.sync(),{signal:this.abort.signal});
@@ -79,6 +78,32 @@ class WatchSession {
   setFollowing(enabled){
     this.following=enabled;this.followButton.setAttribute('aria-pressed',String(enabled));
     this.followButton.title=enabled?'Following playback':'Follow playback';
+  }
+  async copyTranscript(){
+    if(this.copying||!this.cues.length)return;
+    this.copying=true;this.copyButton.disabled=true;clearTimeout(this.copyReset);
+    this.copyButton.replaceChildren(icon('copy'));this.copyButton.title='Copy transcript';this.copyButton.setAttribute('aria-label','Copy transcript');
+    this.copyFeedback.textContent='';
+    try{
+      await navigator.clipboard.writeText(this.cues.map(cue=>cue.text).join('\n'));
+      if(!this.alive)return;
+      this.copyButton.replaceChildren(icon('check'));
+      this.copyButton.title='Transcript copied';this.copyButton.setAttribute('aria-label','Transcript copied');
+      this.copyFeedback.className='copy-feedback visually-hidden';this.copyFeedback.textContent='Transcript copied';
+      this.copyReset=setTimeout(()=>{
+        this.copyButton.replaceChildren(icon('copy'));
+        this.copyButton.title='Copy transcript';this.copyButton.setAttribute('aria-label','Copy transcript');
+        this.copyFeedback.textContent='';
+      },1800);
+    }catch{
+      if(this.alive){
+        this.copyFeedback.className='copy-feedback error';
+        this.copyFeedback.textContent='Could not copy transcript. Try again.';
+      }
+    }finally{
+      this.copying=false;
+      if(this.alive)this.copyButton.disabled=!this.cues.length;
+    }
   }
   request() {
     this.requestId=crypto.randomUUID();this.status.textContent='Loading English captions…';
@@ -93,7 +118,7 @@ class WatchSession {
     try { this.raw=normalizeCues(data.cues); }
     catch {this.status.textContent='YouTube returned captions in an unsupported format.';return;}
     if(!this.raw.length){this.status.textContent='No English captions are available for this video.';return;}
-    this.mergeGeneration=(this.mergeGeneration||0)+1;this.merging=false;this.merged=null;this.mergeError=null;
+    this.mergeGeneration=(this.mergeGeneration||0)+1;this.merging=false;this.merged=null;this.mergeError=null;this.mergeCacheUnavailable=false;
     if(!this.nativeStyle){this.nativeStyle=element('style');this.nativeStyle.textContent='#movie_player .ytp-caption-window-container{visibility:hidden!important}';document.head.append(this.nativeStyle);}
     this.selectCues();
   }
@@ -101,8 +126,8 @@ class WatchSession {
     if(!settings.merge&&this.merging){
       this.mergeGeneration=(this.mergeGeneration||0)+1;this.merging=false;
     }
-    this.mergeToggle.checked=settings.merge;
     this.cues=settings.merge&&this.merged?this.merged:this.raw;
+    this.copyButton.disabled=this.copying||!this.cues.length;
     if(!preserveLookup)this.closeLookup();
     this.active=-1;this.rows=[];this.list.replaceChildren();
     const fragment=document.createDocumentFragment();
@@ -116,17 +141,18 @@ class WatchSession {
   }
   updateStatus() {
     if(!this.raw.length)return;
-    this.status.textContent=!settings.merge?'Original captions':this.merged?`${this.cues.length} sentences`:this.mergeError?`${this.mergeError} Original captions shown.`:this.merging?'Merging sentences… Original captions shown.':'Preparing sentence captions…';
+    this.status.textContent=!settings.merge?'Original captions':this.merged?`${this.cues.length} sentences${this.mergeCacheUnavailable?' · not cached':''}`:this.mergeError?`${this.mergeError} Original captions shown.`:this.merging?'Merging sentences… Original captions shown.':'Preparing sentence captions…';
   }
   async merge() {
-    this.merging=true;const generation=this.mergeGeneration;const source=this.raw;const boundaries=[];this.updateStatus();
+    this.merging=true;this.mergeCacheUnavailable=false;const generation=this.mergeGeneration;const source=this.raw;const boundaries=[];this.updateStatus();
     try {
       const windows=mergeWindows(source);
       for(let i=0;i<windows.length;i++) {
         if(!this.alive||generation!==this.mergeGeneration)return;
-        const result=await send({type:'merge',cues:windows[i]});
+        const result=await send({type:'merge',videoId:this.videoId,cues:windows[i]});
         if(!this.alive||generation!==this.mergeGeneration)return;
         if(!result?.ok)throw new Error(result?.error||'Sentence merging failed.');
+        if(result.cache==='unavailable')this.mergeCacheUnavailable=true;
         boundaries.push(...result.endCueIds);
         this.status.textContent=`Merging sentences ${i+1}/${windows.length}… Original captions shown.`;
       }
@@ -166,6 +192,22 @@ class WatchSession {
     this.lookupGeneration++;this.popup?.remove();this.popup=null;
     this.root.querySelectorAll('.selected').forEach(n=>n.classList.remove('selected'));this.panelRoot.querySelectorAll('.selected').forEach(n=>n.classList.remove('selected'));
     void send({type:'speech:stop'});
+  }
+  dismissFromOutside(event){
+    if(!this.popup)return;
+    const path=event.composedPath();
+    if(path.includes(this.popup)||path.some(node=>node.classList?.contains('word')&&
+      (node.getRootNode()===this.root||node.getRootNode()===this.panelRoot)))return;
+    const resume=this.lookupWasPlaying;
+    const navigating=path.some(node=>node.matches?.('a[href]'));
+    this.closeLookup();
+    // Let the clicked transport/seek control act first, without toggling playback twice.
+    if(resume&&!navigating)setTimeout(()=>{
+      if(this.alive&&!this.popup&&this.video.paused&&
+        new URLSearchParams(location.search).get('v')===this.videoId){
+        void this.video.play().catch(()=>{});
+      }
+    },0);
   }
   async lookup(word,cue,index,offset,trigger) {
     const resume=this.popup?this.lookupWasPlaying:!this.video.paused;
@@ -228,7 +270,7 @@ class WatchSession {
     if(popup&&popup===this.popup)popup.querySelector('.speech-status').textContent=result?.ok?'':result?.error||'Pronunciation is unavailable.';
   }
   dispose() {
-    this.alive=false;this.abort.abort();this.resize.disconnect();clearTimeout(this.captionTimeout);this.closeLookup();this.overlay.remove();this.panelHost.remove();this.nativeStyle?.remove();
+    this.alive=false;this.abort.abort();this.resize.disconnect();clearTimeout(this.captionTimeout);clearTimeout(this.copyReset);this.closeLookup();this.overlay.remove();this.panelHost.remove();this.nativeStyle?.remove();
   }
 }
 function mount() {

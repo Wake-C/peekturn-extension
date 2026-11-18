@@ -9,13 +9,16 @@ function provider(value, inspect = () => {}) {
   return async (url, init) => { inspect(url, JSON.parse(init.body), init.headers); return { ok: true, json: async () => ({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(value) } }] }) }; };
 }
 test('explains with exact prompt, context clipping, schema and authentication', async () => {
+  let request;
   const result = await explain(config, { selection: 'hello', before: Array.from({ length: 35 }, (_, i) => i).join(' '), after: 'next', sourceTitle: 'Title' }, provider(answer, (url, body, headers) => {
     assert.equal(url, 'https://api.deepseek.com/v1/chat/completions');
     assert.equal(headers.Authorization, 'Bearer secret');
     assert.ok(body.messages[0].content.startsWith(PROMPT_EN));
     assert.equal(JSON.parse(body.messages[1].content).before.split(' ').length, 30);
     assert.equal(body.response_format.type, 'json_object');
+    request = body;
   }));
+  assert.deepEqual(request.thinking, { type: 'disabled' });
   assert.deepEqual(result, answer);
 });
 test('honors language-specific override and translation policy', async () => {
@@ -33,11 +36,14 @@ test('rejects malformed provider responses and unsafe endpoints', async () => {
   await assert.rejects(chat(config, [], { name: 'x', schema: {} }, async () => ({ ok: true, json: async () => ({ choices: [{ finish_reason: 'length', message: { content: '{}' } }] }) })), /incomplete/);
 });
 test('computes ceilings and splits model boundaries at local limits', async () => {
+  let request;
   const cues = [{ id: 1, startMs: 0, endMs: 1000, text: 'one' }, { id: 2, startMs: 1500, endMs: 2000, text: 'two' }, { id: 3, startMs: 4000, endMs: 5000, text: 'three' }];
   const ids = await merge(config, cues, provider({ endCueIds: [3] }, (_, body) => {
     assert.ok(body.messages[0].content.startsWith(MERGE_PROMPT));
+    request = body;
     assert.deepEqual(JSON.parse(body.messages[1].content).cues.map(c => c.maxEndCueId), [2, 2, 3]);
   }));
+  assert.deepEqual(request.thinking, { type: 'disabled' });
   assert.deepEqual(ids, [2, 3]);
   await assert.rejects(merge(config, cues, provider({ endCueIds: [1, 1, 3] })), /invalid caption/);
   await assert.rejects(merge(config, cues, provider({ endCueIds: [2] })), /incomplete caption/);

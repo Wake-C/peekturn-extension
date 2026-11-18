@@ -14,11 +14,11 @@ Peekturn is a standalone Chrome extension in the same family as [Peekturn for An
 
 ## Read as you watch
 
-- **Complete sentences:** Model-assisted caption merging is on by default for both the video captions and the transcript. Groups have length and timing limits and preserve the source text. While merging is pending or unavailable, the interface says so and shows the original captions.
+- **Complete sentences:** Model-assisted caption merging is on by default for both the video captions and the transcript. Groups have length and timing limits and preserve the source text. Completed results are cached locally for repeat visits; changed captions, models, or merge rules trigger a fresh merge. While merging is pending or unavailable, the interface says so and shows the original captions.
 - **Word explanations:** Click a word in either surface to open a compact in-video explanation with meaning, context, and examples. Choose English or Simplified Chinese, and use, customize, or restore the default prompt for either language.
 - **Pronunciation:** Selected words are spoken automatically by default, with US and UK accents available. Speaker buttons beside words and examples play or stop speech.
-- **Playback controls:** Looking up a word pauses the video; closing the popup does not resume it automatically. Replay the sentence explicitly, or resume if the video was playing before the lookup.
-- **Follow the transcript:** The compact right-hand transcript highlights the active cue, and timestamps seek through the video. Scrolling stops follow mode; use the follow button to return to the current position.
+- **Playback controls:** Looking up a word pauses the video. Clicking outside dismisses the explanation and resumes playback if the lookup interrupted it; an already-paused video stays paused. The close button keeps playback paused. You can also replay the sentence or resume explicitly.
+- **Follow the transcript:** The compact right-hand transcript highlights the active cue, and timestamps seek through the video. Scrolling stops follow mode; use the follow button to return to the current position. The copy icon in the header copies the full transcript without timestamps.
 
 ## Install
 
@@ -41,6 +41,8 @@ Settings also control explanation language, pronunciation, sentence merging, and
 ## Privacy and limits
 
 The API key is stored in Chrome's local extension storage, not an OS-encrypted vault; the extension does not expose the key to the page. For a lookup, the configured model provider receives the selected word, nearby captions, video title, and timestamp. When sentence merging is enabled, caption segments are sent to the provider too. The extension does not send application telemetry.
+
+The merge cache stores only content fingerprints, group boundaries, and timestamps for up to 30 days. It is limited to 1 MiB and evicts the least recently used results when full.
 
 Pronunciation uses Chrome text-to-speech. Available voices vary by browser and operating system, and some voices may use a network. Model explanations and merging require an available model service; offline AI is not promised.
 
