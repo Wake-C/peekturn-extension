@@ -15,14 +15,14 @@ Peekturn is a standalone Chrome extension in the same family as [Peekturn for An
 ## Read as you watch
 
 - **Complete sentences:** Model-assisted caption merging is on by default for both the video captions and the transcript. Groups have length and timing limits and preserve the source text. Completed results are cached locally for repeat visits; changed captions, models, or merge rules trigger a fresh merge. While merging is pending or unavailable, the interface says so and shows the original captions.
-- **Word explanations:** Click a word in either surface to open a compact in-video explanation with meaning, context, and examples. Choose English or Simplified Chinese, and use, customize, or restore the default prompt for either language.
+- **Word explanations:** Click a word to look it up. When it belongs to a fixed expression, the default prompts ask for the expression's core meaning, its use at that spot, and two examples. Customize or restore the English and Simplified Chinese prompts independently.
 - **Pronunciation:** Selected words are spoken automatically by default, with US and UK accents available. Speaker buttons beside words and examples play or stop speech.
 - **Playback controls:** Looking up a word pauses the video. Clicking outside dismisses the explanation and resumes playback if the lookup interrupted it; an already-paused video stays paused. The close button keeps playback paused. You can also replay the sentence or resume explicitly.
 - **Follow the transcript:** The compact right-hand transcript highlights the active cue, and timestamps seek through the video. Scrolling stops follow mode; use the follow button to return to the current position. The copy icon in the header copies the full transcript without timestamps.
 
 ## Install
 
-1. On the [GitHub repository](https://github.com/Wake-C/peekturn-extension), choose **Code → Download ZIP** and extract the downloaded file.
+1. Download `peekturn-extension-VERSION.zip` from [GitHub Releases](https://github.com/Wake-C/peekturn-extension/releases/latest) and extract it.
 2. Open `chrome://extensions` in Chrome and turn on **Developer mode**.
 3. Select **Load unpacked** and choose the extracted folder containing `manifest.json`.
 
